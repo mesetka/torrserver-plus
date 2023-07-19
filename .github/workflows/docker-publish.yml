@@ -69,4 +69,4 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           file: Dockerfile
-          platform: linux/amd64         
+          platforms: linux/amd64         
