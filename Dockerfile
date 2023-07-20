@@ -69,11 +69,11 @@ RUN echo "**** install build packages ****" && \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
 && export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $(\
-   curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname)" | grep -i "$($BUILDARCH | sed "s/armhf/arm7/g")") \
+   curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname)" | grep -i "$($TARGETARCH | sed "s/armhf/arm7/g")") \
 && chmod a+x /TS/TorrServer \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/tmp/ffprobe.zip --tries=3 $(\
    curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep linux | \
-   grep -i -E "$($BUILDARCH | sed "s/amd64/linux-64/g" | sed "s/arm64/linux-arm-64/g" | sed -E "s/armhf/linux-armhf-32/g")" | jq -r) \
+   grep -i -E "$($TARGETARCH | sed "s/amd64/linux-64/g" | sed "s/arm64/linux-arm-64/g" | sed -E "s/armhf/linux-armhf-32/g")" | jq -r) \
 && unzip -x -o /tmp/ffprobe.zip ffprobe -d /usr/local/bin \
 && chmod -R +x /usr/local/bin \
 && touch /var/log/cron.log \
