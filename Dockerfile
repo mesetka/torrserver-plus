@@ -57,7 +57,6 @@ RUN echo "**** install build packages ****" && \
     wget \
     curl \
     procps \
-    cron \
     file \
     jq \
     unzip \
