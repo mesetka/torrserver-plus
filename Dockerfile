@@ -62,7 +62,7 @@ RUN echo "**** install build packages ****" && \
     unzip \
     tzdata wget curl procps file jq unzip gnupg binutils moreutils speedtest-cli dos2unix iproute2 \
     musl-locales \
-   && strip --remove-section=.note.ABI-tag $(find /usr/. -name "libQt5Core.so.5") \
+   && strip --remove-section=.note.ABI-tag $(find /usr/. -name "libQt6Core.so.6") \
    && dos2unix /start.sh && dos2unix /config.sh && dos2unix /update.sh && dos2unix /ts_log_listener.sh && dos2unix /qbt_manager.sh && dos2unix /qbt_resume_torrents.sh && dos2unix /ps_exit.sh \
 && chmod +x /start.sh && chmod +x /config.sh && chmod +x /update.sh && chmod +x /ts_log_listener.sh && chmod +x /qbt_manager.sh && chmod +x /qbt_resume_torrents.sh && chmod +x /ps_exit.sh \
 && mkdir -p /TS && chmod -R 666 /TS \
