@@ -2,8 +2,15 @@
 # TorrServer with qBittorrent
 #
 
-FROM ubuntu:latest
-
+FROM alpine:latest
+ARG BUILD_DATE
+ARG VERSION
+ARG QBITTORRENT_VERSION
+ARG QBT_VERSION
+ARG UNRAR_VERSION=6.2.8
+ENV HOME="/config" \
+XDG_CONFIG_HOME="/config" \
+XDG_DATA_HOME="/config"
 ENV TS_GIT_URL="https://api.github.com/repos/YouROK/TorrServer/releases"
 ENV TS_HOME_URL="https://releases.yourok.ru/torr/server_release.json"
 ENV TS_RELEASE="latest"
@@ -20,6 +27,7 @@ ENV FILES_URL="https://raw.githubusercontent.com/MrKsey/torrserver-plus/main"
 ENV FFBINARIES="https://ffbinaries.com/api/v1/version/latest"
 ENV USER_AGENT="Mozilla/5.0 (X11; Linux x86_64; rv:77.0) Gecko/20100101 Firefox/77.0"
 
+
 # On linux systems you need to set this environment variable before run:
 ENV GODEBUG="madvdontneed=1"
 
@@ -31,16 +39,34 @@ COPY qbt_manager.sh /qbt_manager.sh
 COPY qbt_resume_torrents.sh /qbt_resume_torrents.sh
 COPY ps_exit.sh /ps_exit.sh
 
-RUN export DEBIAN_FRONTEND=noninteractive \
-&& apt-get update && apt-get upgrade -y \
-&& apt-get install --no-install-recommends -y ca-certificates tzdata wget curl procps cron file jq unzip gnupg qbittorrent-nox binutils moreutils speedtest-cli dos2unix iproute2 locales \
-&& strip --remove-section=.note.ABI-tag $(find /usr/. -name "libQt5Core.so.5") \
-&& wget -qO- 'https://dl.cloudsmith.io/public/qbittorrent-cli/qbittorrent-cli/gpg.F8756541ADDA2B7D.key' | apt-key add - \
-&& wget -q 'https://repos.fedarovich.com/ubuntu/jammy/qbittorrent-cli.list' \
-&& mv qbittorrent-cli.list /etc/apt/sources.list.d/ \
-&& apt-get update && apt-get install --no-install-recommends -y qbittorrent-cli \
-&& apt-get clean \
-&& dos2unix /start.sh && dos2unix /config.sh && dos2unix /update.sh && dos2unix /ts_log_listener.sh && dos2unix /qbt_manager.sh && dos2unix /qbt_resume_torrents.sh && dos2unix /ps_exit.sh \
+
+RUN echo "**** install build packages ****" && \
+   apk add --no-cache --virtual=build-dependencies \
+   build-base && \
+   echo "**** install packages ****" && \
+   apk add --no-cache --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing \
+    icu-libs \
+    libstdc++ \
+    openssl \
+    openssl1.1-compat \
+    p7zip \
+    python3 \
+    qt6-qtbase-sqlite && \
+    ca-certificates \
+    tzdata \
+    wget \
+    curl \
+    procps \
+    cron \
+    file \
+    jq \
+    unzip \
+    ca-certificates tzdata wget curl procps file jq unzip gnupg binutils moreutils speedtest-cli dos2unix iproute2 \
+    musl-locales \
+   && strip --remove-section=.note.ABI-tag $(find /usr/. -name "libQt5Core.so.5") \
+    && wget https://gitlab.com/rilian-la-te/musl-locales/-/archive/master/musl-locales-master.zip \
+
+   && dos2unix /start.sh && dos2unix /config.sh && dos2unix /update.sh && dos2unix /ts_log_listener.sh && dos2unix /qbt_manager.sh && dos2unix /qbt_resume_torrents.sh && dos2unix /ps_exit.sh \
 && chmod +x /start.sh && chmod +x /config.sh && chmod +x /update.sh && chmod +x /ts_log_listener.sh && chmod +x /qbt_manager.sh && chmod +x /qbt_resume_torrents.sh && chmod +x /ps_exit.sh \
 && mkdir -p /TS && chmod -R 666 /TS \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
@@ -62,7 +88,8 @@ ENV LANGUAGE=en_US:en
 ENV LC_ALL=en_US.UTF-8
 
 HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD curl -sS 127.0.0.1:$TS_PORT || exit 1
-
+COPY root/ /
 VOLUME [ "$TS_CONF_PATH" ]
-
+VOLUME /config
+EXPOSE 8080 6881 6881/udp
 CMD ["/start.sh"]

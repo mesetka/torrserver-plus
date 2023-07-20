@@ -67,62 +67,11 @@ if [ ! -s $TS_CONF_PATH/config.db ]; then
     fi
 fi
 
-# File qBittorrent.conf
-if [ ! -s $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf ]; then
-    mkdir -p $TS_CONF_PATH/qBittorrent/config && chmod -R 666 $TS_CONF_PATH/qBittorrent/config
-    wget -q --no-check-certificate --user-agent="$USER_AGENT" --content-disposition "$FILES_URL/qBittorrent.conf" -O $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
-    if [ -s $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf ]; then
-        dos2unix $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
-        echo " "
-        echo "============================================="
-        echo "$(date): File qBittorrent.conf downloaded from the github."
-        echo "============================================="
-        echo " "
-    else
-        cat <<EOT >> $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
-[BitTorrent]
-Session\AddTrackersEnabled=true
-Session\AdditionalTrackers=http://bt.t-ru.org/ann?magnet\nhttp://bt2.t-ru.org/ann?magnet\nhttp://bt3.t-ru.org/ann?magnet\nhttp://bt4.t-ru.org/ann?magnet\nhttp://tracker.dler.org:6969/announce\nhttp://tracker.files.fm:6969/announce\nhttp://tracker.internetwarriors.net:1337/announce\nhttp://tracker2.itzmx.com:6961/announce\nhttp://tracker.openbittorrent.com:80/announce\nudp://opentor.net:6969\nudp://open.stealth.si:80/announce\nudp://exodus.desync.com:6969/announce\nudp://tracker.openbittorrent.com:80/announce\nudp://tracker.openbittorrent.com:6969/announce\nudp://tracker.tiny-vps.com:6969/announce\nudp://tracker.bitsearch.to:1337/announce\nudp://tracker.moeking.me:6969/announce\n
-Session\AlternativeGlobalDLSpeedLimit=(SPEEDTEST)
-Session\AlternativeGlobalUPSpeedLimit=(SPEEDTEST)
-Session\AnnounceToAllTiers=true
-Session\AnnounceToAllTrackers=true
-Session\BandwidthSchedulerEnabled=true
-Session\DefaultSavePath=(QBT_TORR_DIR)
-Session\GlobalDLSpeedLimit=(SPEEDTEST)
-Session\GlobalUPSpeedLimit=(SPEEDTEST)
-Session\IgnoreLimitsOnLAN=true
-Session\MultiConnectionsPerIp=true
-Session\UseAlternativeGlobalSpeedLimit=true
-Session\IPFilter=(TS_CONF_PATH)/bip.dat
-Session\IPFilteringEnabled=true
-TrackerEnabled=true
-
-[Core]
-AutoDeleteAddedTorrentFile=IfAdded
-
-[Network]
-PortForwardingEnabled=true
-
-[Preferences]
-Advanced\trackerPort=(QBT_TRACKER_PORT)
-Scheduler\days=EveryDay
-Scheduler\end_time=@Variant(\0\0\0\xf\0m\xdd\0)
-Scheduler\start_time=@Variant(\0\0\0\xf\x1I\x97\0)
-WebUI\LocalHostAuth=false
-WebUI\UseUPnP=false
-
-EOT
-    fi
-fi
-
 
 # Folder for TS disk cache
 [ ! -d "$TS_CACHE_PATH" ] && mkdir -p $TS_CACHE_PATH && chmod -R 777 $TS_CACHE_PATH
 [ ! -d "/cache" ] && ln -s $TS_CACHE_PATH /cache
 
-# Folder for qBittorrent downloads
-[ ! -d "$QBT_TORR_DIR" ] && mkdir -p $QBT_TORR_DIR && chmod -R 777 $QBT_TORR_DIR
 
 # Reset list of monitoring hashes in TS_STAT file
 [ -s "$TS_STAT" ] && [ $(jq empty $TS_STAT > /dev/null 2>&1; echo $?) -eq 0 ] && jq '."monitor" = {}' $TS_STAT | sponge $TS_STAT
@@ -158,7 +107,7 @@ fi
 
 #  UPDATE_TASK (TS and linux updates)
 if [ -z "$UPDATE_TASK" ]; then
-    # generate update time in interval 3-4h and 0-59m 
+    # generate update time in interval 3-4h and 0-59m
     UPDATE_H=$(shuf -i3-4 -n1)
     UPDATE_M=$(shuf -i0-59 -n1)
     export UPDATE_TASK="\"$UPDATE_M $UPDATE_H \* \* \*\""
@@ -177,38 +126,33 @@ fi
 [ "$FFPROBE_UPDATE" != "true" ] && export FFPROBE_UPDATE=false
 sed -i "/^FFPROBE_UPDATE=/{h;s/=.*/=${FFPROBE_UPDATE}/};\${x;/^$/{s//FFPROBE_UPDATE=${FFPROBE_UPDATE}/;H};x}" $TS_CONF_PATH/ts.ini
 
-#  QBT_ENABLED
-[ -z "$QBT_ENABLED" ] && export QBT_ENABLED=true
-[ "$QBT_ENABLED" != "true" ] && export QBT_ENABLED=false
-sed -i "/^QBT_ENABLED=/{h;s/=.*/=${QBT_ENABLED}/};\${x;/^$/{s//QBT_ENABLED=${QBT_ENABLED}/;H};x}" $TS_CONF_PATH/ts.ini
-
 
 # Set parameters in file qBittorrent.conf
-if [ "$QBT_ENABLED" == "true" ]; then
+if [ "$TRANSMISSION_ENABLED" == "true" ]; then
     echo " "
     echo "----------------------------------------"
     echo " "
-    echo "$(date): qBittorrent enabled. Setting parameters in qBittorrent.conf ..."
+    echo "$(date): Transmission enabled. Setting parameters in qBittorrent.conf ..."
     if [ $(grep "SPEEDTEST" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf | wc -l) -gt 0 ]; then
         # Test internet speed
         echo "$(date): Testing internet speed ..."
         speedtest --json > $TS_CONF_PATH/speedtest.json
-            
+
         # download speed, kbit/s
         DOWNLOAD_SPEED=$(jq '.download' $TS_CONF_PATH/speedtest.json | awk '{print int($1+0.5)}')
         DOWNLOAD_SPEED=$(($DOWNLOAD_SPEED / 1024))
-            
+
         # upload speed, kbit/s
         UPLOAD_SPEED=$(jq '.upload' $TS_CONF_PATH/speedtest.json | awk '{print int($1+0.5)}')
         UPLOAD_SPEED=$(($UPLOAD_SPEED / 1024))
-        
+
         # QBT day speed limit = 20% of internet speed, KBytes/s
         QBT_DL_DAY_SPEED=$(((($DOWNLOAD_SPEED * 20) / 100) / 8))
         QBT_UP_DAY_SPEED=$(((($UPLOAD_SPEED * 20) / 100) / 8))
         sed -i "s/Session\\\AlternativeGlobalDLSpeedLimit=(SPEEDTEST)/Session\\\AlternativeGlobalDLSpeedLimit=${QBT_DL_DAY_SPEED}/g" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
         sed -i "s/Session\\\AlternativeGlobalUPSpeedLimit=(SPEEDTEST)/Session\\\AlternativeGlobalUPSpeedLimit=${QBT_UP_DAY_SPEED}/g" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
         echo "$(date): Set qBittorrent day download/upload limits: $QBT_DL_DAY_SPEED / $QBT_UP_DAY_SPEED KByte/s"
-            
+
         # QBT night speed limit = 80% of internet speed, KBytes/s
         QBT_DL_NIGHT_SPEED=$(((($DOWNLOAD_SPEED * 80) / 100) / 8))
         QBT_UP_NIGHT_SPEED=$(((($UPLOAD_SPEED * 80) / 100) / 8))
@@ -216,7 +160,7 @@ if [ "$QBT_ENABLED" == "true" ]; then
         sed -i "s/Session\\\GlobalUPSpeedLimit=(SPEEDTEST)/Session\\\GlobalUPSpeedLimit=${QBT_UP_NIGHT_SPEED}/g" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
         echo "$(date): Set qBittorrent night download/upload limits: $QBT_DL_NIGHT_SPEED / $QBT_UP_NIGHT_SPEED KByte/s"
     fi
-        
+
     #  QBT_TRACKER_PORT
     export QBT_TRACKER_PORT=$(grep "trackerPort" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf | grep -o -E "[0-9]+")
     if [ -z "$QBT_TRACKER_PORT" ]; then
@@ -228,7 +172,7 @@ if [ "$QBT_ENABLED" == "true" ]; then
         sed -i "s/Advanced\\\trackerPort=(QBT_TRACKER_PORT)/Advanced\\\trackerPort=${QBT_TRACKER_PORT}/g" $TS_CONF_PATH/qBittorrent/config/qBittorrent.conf
     fi
     echo "$(date): Set qBittorrent tracker port to $QBT_TRACKER_PORT"
-    
+
     #  QBT_LOCAL_TRACKER
     export QBT_LOCAL_TRACKER="http://localhost:$QBT_TRACKER_PORT/announce"
     if [ ! -s $TS_CONF_PATH/trackers.txt ]; then
