@@ -70,14 +70,12 @@ RUN echo "**** install build packages ****" && \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
 && export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
 && export PLATFORM=$(echo $TARGETARCH | sed 's/\/.*//') \
-&& export ARHITECTURE=$(echo $TARGETARCH | sed 's/.*\///') \
+&& export ARCHITECTURE=$(echo $TARGETARCH | sed 's/.*\///') \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $(\
    curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$PLATFORM" | grep -i "$ARCHITECTURE") \
 && chmod a+x /TS/TorrServer \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/tmp/ffprobe.zip --tries=3 $(\
-   curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i "$PLATFORM" | grep -i '$(grep -i "$ARCHITECTURE" \
-   | sed "s/amd64/linux-64/g" | sed "s/arm64/linux-arm-64/g" | sed -E "s/armhf/linux-armhf-32/g")' | jq -r) \
-&& echo "quotes OK" \
+curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i "$PLATFORM" | grep -i "$(echo $ARCHITECTURE | sed 's/amd64/linux-64/g' | sed 's/arm64/linux-arm-64/g' | sed -E 's/armhf/linux-armhf-32/g')" | jq -r) \
 && unzip -x -o /tmp/ffprobe.zip ffprobe -d /usr/local/bin \
 && chmod -R +x /usr/local/bin \
 && touch /var/log/cron.log \
