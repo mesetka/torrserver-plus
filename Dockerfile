@@ -69,8 +69,8 @@ RUN echo "**** install build packages ****" && \
 && mkdir -p /TS && chmod -R 666 /TS \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
 && export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
-&& export PLATFORM=$(echo $TARGETARCH | sed 's/\/.*//') \
-&& export ARCHITECTURE=$(echo $TARGETARCH | sed 's/.*\///') \
+&& export PLATFORM=$(echo $TARGETPLATFORM | sed 's/\/.*//') \
+&& export ARCHITECTURE=$(echo $TARGETPLATFORM | sed 's/.*\///') \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $(\
    curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$PLATFORM" | grep -i "$ARCHITECTURE") \
 && chmod a+x /TS/TorrServer \
