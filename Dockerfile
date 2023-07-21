@@ -68,6 +68,7 @@ RUN echo "**** install build packages ****" && \
 && export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
 && echo $TS_URL \
 && curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname -s)" | grep -i "$(uname -r | sed 's/.*-//')" \
+&& echo "curl sucess" \
 && mkdir -p /TS && chmod -R 666 /TS \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
 && curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname -s)" | grep -i "$(uname -r | sed 's/.*-//')" \
