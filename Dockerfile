@@ -79,7 +79,7 @@ RUN echo "**** install build packages ****" && \
 && chmod -R +x /usr/local/bin \
 && touch /var/log/cron.log \
 && ln -sf /proc/1/fd/1 /var/log/cron.log \
-&& locale en_US.UTF-8 &&
+&& locale en_US.UTF-8
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
