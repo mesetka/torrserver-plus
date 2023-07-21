@@ -78,6 +78,40 @@ RUN echo "**** install build packages ****" && \
 curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i "$PLATFORM" | grep -i "$(echo $ARCHITECTURE | sed 's/amd64/linux-64/g' | sed 's/arm64/linux-arm-64/g' | sed -E 's/armhf/linux-armhf-32/g')" | jq -r) \
 && unzip -x -o /tmp/ffprobe.zip ffprobe -d /usr/local/bin \
 && chmod -R +x /usr/local/bin \
+&& echo "**** install unrar from source ****" && \
+  mkdir /tmp/unrar && \
+  curl -o \
+    /tmp/unrar.tar.gz -L \
+    "https://www.rarlab.com/rar/unrarsrc-${UNRAR_VERSION}.tar.gz" && \
+  tar xf \
+    /tmp/unrar.tar.gz -C \
+    /tmp/unrar --strip-components=1 && \
+  cd /tmp/unrar && \
+  make && \
+  install -v -m755 unrar /usr/bin && \
+  if [ -z ${QBITTORRENT_VERSION+x} ]; then \
+    QBITTORENT_URL=echo "http://dl-cdn.alpinelinux.org/alpine/edge/community/""$(echo $ARCHITECTURE | sed 's/amd64/x86-64/g' | sed 's/arm64/aarch64/g')""/APKINDEX.tar.gz"\
+   QBITTORRENT_VERSION=$(curl -sL $QBITTORENT_URL | tar -xz -C /tmp \
+    && awk '/^P:qbittorrent-nox$/,/V:/' /tmp/APKINDEX | sed -n 2p | sed 's/^V://'); \
+  fi && \
+  apk add -U --upgrade --no-cache \
+    qbittorrent-nox==${QBITTORRENT_VERSION} && \
+  echo "***** install qbitorrent-cli ****" && \
+  mkdir /qbt && \
+  QBT_VERSION=$(curl -sL "https://api.github.com/repos/fedarovich/qbittorrent-cli/releases" \
+      | awk '/tag_name/{print $4;exit}' FS='[""]'); \
+  curl -o \
+    /tmp/qbt.tar.gz -L \
+    "https://github.com/fedarovich/qbittorrent-cli/releases/download/${QBT_VERSION}/qbt-linux-alpine-x64-${QBT_VERSION:1}.tar.gz" && \
+  tar xf \
+    /tmp/qbt.tar.gz -C \
+    /qbt && \
+  echo "**** cleanup ****" && \
+  apk del --purge \
+    build-dependencies && \
+  rm -rf \
+    /root/.cache \
+    /tmp/* \
 && touch /var/log/cron.log \
 && ln -sf /proc/1/fd/1 /var/log/cron.log \
 && locale en_US.UTF-8
