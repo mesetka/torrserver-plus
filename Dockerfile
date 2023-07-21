@@ -70,7 +70,7 @@ RUN echo "**** install build packages ****" && \
 && mkdir -p /TS && chmod -R 666 /TS \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $(\
-   curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname -s)" | grep -i "$(uname -r | sed 's/.*-//')")
+   curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i '$(uname -s)' | grep -i '$(uname -r | sed "s/.*-//")')
 
 
 ENV LANG=en_US.UTF-8
