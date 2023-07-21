@@ -8,6 +8,7 @@ ARG VERSION
 ARG QBITTORRENT_VERSION
 ARG QBT_VERSION
 ARG UNRAR_VERSION=6.2.8
+ARG TARGETPLATFORM
 ENV HOME="/config" \
 XDG_CONFIG_HOME="/config" \
 XDG_DATA_HOME="/config"
@@ -65,17 +66,23 @@ RUN echo "**** install build packages ****" && \
    && strip --remove-section=.note.ABI-tag $(find /usr/. -name "libQt6Core.so.6") \
    && dos2unix /start.sh && dos2unix /config.sh && dos2unix /update.sh && dos2unix /ts_log_listener.sh && dos2unix /qbt_manager.sh && dos2unix /qbt_resume_torrents.sh && dos2unix /ps_exit.sh \
 && chmod +x /start.sh && chmod +x /config.sh && chmod +x /update.sh && chmod +x /ts_log_listener.sh && chmod +x /qbt_manager.sh && chmod +x /qbt_resume_torrents.sh && chmod +x /ps_exit.sh \
-&& export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
-&& echo $TS_URL \
-&& export PLATFORM="$(uname -r | sed 's/.*-//')" \
-&& echo $PLATFORM \
-&& export TORRSERV_URL="$(curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname -s)" | grep -i $PLATFORM)" \
-&& echo $TORRSERV_URL \
 && mkdir -p /TS && chmod -R 666 /TS \
 && mkdir -p $TS_CONF_PATH && chmod -R 666 $TS_CONF_PATH \
-&& wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $TORRSERV_URL \
-&& echo "done"
-
+&& export TS_URL=$TS_GIT_URL/$([ "$TS_RELEASE" != "latest" ] && echo tags/$TS_RELEASE || echo $TS_RELEASE) \
+&& export PLATFORM=$(echo $TARGETARCH | sed 's/\/.*//') \
+&& export ARHITECTURE=$(echo $TARGETARCH | sed 's/.*\///') \
+&& wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/TS/TorrServer --tries=3 $(\
+   curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$PLATFORM" | grep -i "$ARCHITECTURE") \
+&& chmod a+x /TS/TorrServer \
+&& wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/tmp/ffprobe.zip --tries=3 $(\
+   curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i "$PLATFORM" | grep -i '$(grep -i "$ARCHITECTURE" \
+   | sed "s/amd64/linux-64/g" | sed "s/arm64/linux-arm-64/g" | sed -E "s/armhf/linux-armhf-32/g")' | jq -r) \
+&& echo "quotes OK" \
+&& unzip -x -o /tmp/ffprobe.zip ffprobe -d /usr/local/bin \
+&& chmod -R +x /usr/local/bin \
+&& touch /var/log/cron.log \
+&& ln -sf /proc/1/fd/1 /var/log/cron.log \
+&& locale en_US.UTF-8
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
