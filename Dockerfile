@@ -72,8 +72,9 @@ RUN echo "**** install build packages ****" && \
    curl -s $TS_URL | grep -o -E 'http.+\w+' | grep -i "$(uname -s)" | grep -i "$(uname -r | sed 's/.*-//')") \
 && chmod a+x /TS/TorrServer \
 && wget --no-verbose --no-check-certificate --user-agent="$USER_AGENT" --output-document=/tmp/ffprobe.zip --tries=3 $( \
-   curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i '$(uname -s)' | grep -i '$((uname -r | sed "s/.*-//") \
+   curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i '$(uname -s)' | grep -i '$([uname -r | sed "s/.*-//"] \
    | sed "s/amd64/linux-64/g" | sed "s/arm64/linux-arm-64/g" | sed -E "s/armhf/linux-armhf-32/g")' | jq -r) \
+&& echo "quotes OK" \
 && unzip -x -o /tmp/ffprobe.zip ffprobe -d /usr/local/bin \
 && chmod -R +x /usr/local/bin \
 && touch /var/log/cron.log \
