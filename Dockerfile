@@ -79,7 +79,40 @@ RUN echo "**** install build packages ****" && \
 && chmod -R +x /usr/local/bin \
 && touch /var/log/cron.log \
 && ln -sf /proc/1/fd/1 /var/log/cron.log \
-&& locale en_US.UTF-8
+&& locale en_US.UTF-8 &&\
+echo "**** install unrar from source ****" && \
+  mkdir /tmp/unrar && \
+  curl -o \
+    /tmp/unrar.tar.gz -L \
+    "https://www.rarlab.com/rar/unrarsrc-${UNRAR_VERSION}.tar.gz" && \
+  tar xf \
+    /tmp/unrar.tar.gz -C \
+    /tmp/unrar --strip-components=1 && \
+  cd /tmp/unrar && \
+  make && \
+  install -v -m755 unrar /usr/bin && \
+  if [ -z ${QBITTORRENT_VERSION+x} ]; then \
+    QBITTORRENT_VERSION=$(curl -sL "http://dl-cdn.alpinelinux.org/alpine/edge/community/x86_64/APKINDEX.tar.gz" | tar -xz -C /tmp \
+    && awk '/^P:qbittorrent-nox$/,/V:/' /tmp/APKINDEX | sed -n 2p | sed 's/^V://'); \
+  fi && \
+  apk add -U --upgrade --no-cache \
+    qbittorrent-nox==${QBITTORRENT_VERSION} && \
+  echo "***** install qbitorrent-cli ****" && \
+  mkdir /qbt && \
+  QBT_VERSION=$(curl -sL "https://api.github.com/repos/fedarovich/qbittorrent-cli/releases" \
+      | awk '/tag_name/{print $4;exit}' FS='[""]'); \
+  curl -o \
+    /tmp/qbt.tar.gz -L \
+    "https://github.com/fedarovich/qbittorrent-cli/releases/download/${QBT_VERSION}/qbt-linux-alpine-x64-${QBT_VERSION:1}.tar.gz" && \
+  tar xf \
+    /tmp/qbt.tar.gz -C \
+    /qbt && \
+  echo "**** cleanup ****" && \
+  apk del --purge \
+    build-dependencies && \
+  rm -rf \
+    /root/.cache \
+    /tmp/*
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
