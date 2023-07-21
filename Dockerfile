@@ -90,7 +90,7 @@ curl -s $FFBINARIES | jq '.bin | .[].ffprobe' | grep -i "$PLATFORM" | grep -i "$
   make && \
   install -v -m755 unrar /usr/bin && \
   if [ -z ${QBITTORRENT_VERSION+x} ]; then \
-    QBITTORENT_URL=echo "http://dl-cdn.alpinelinux.org/alpine/edge/community/""$(echo $ARCHITECTURE | sed 's/amd64/x86_64/g' | sed 's/arm64/aarch64/g')""/APKINDEX.tar.gz"\
+    QBITTORENT_URL=$(echo "http://dl-cdn.alpinelinux.org/alpine/edge/community/""$(echo $ARCHITECTURE | sed 's/amd64/x86_64/g' | sed 's/arm64/aarch64/g')""/APKINDEX.tar.gz")\
    QBITTORRENT_VERSION=$(curl -sL $QBITTORENT_URL | tar -xz -C /tmp \
     && awk '/^P:qbittorrent-nox$/,/V:/' /tmp/APKINDEX | sed -n 2p | sed 's/^V://'); \
   fi && \
